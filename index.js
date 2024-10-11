@@ -25,30 +25,28 @@ client.on("messageCreate", async (message) => {
     const emojiId = emojiMatch[0].split(":")[2].replace(">", "");
     const emoji = message.guild.emojis.cache.get(emojiId);
 
-    if (emoji) {
-      // 이모지 이미지 URL 가져오기
-      const emojiURL = `https://cdn.discordapp.com/emojis/${emojiId}.png`;
+    // 이모지 이미지 URL 가져오기
+    const emojiURL = `https://cdn.discordapp.com/emojis/${emojiId}.png`;
 
-      // 원본 메시지 삭제 (봇에게 '메시지 관리' 권한 필요)
-      message.delete();
+    // 원본 메시지 삭제 (봇에게 '메시지 관리' 권한 필요)
+    message.delete();
 
-      // 웹훅 생성 및 메시지 전송 예제
-      const webhook = await message.channel.createWebhook({
-        name: message.author.username,
-        avatar: message.author.displayAvatarURL(),
-      });
+    // 웹훅 생성 및 메시지 전송 예제
+    const webhook = await message.channel.createWebhook({
+      name: message.author.username,
+      avatar: message.author.displayAvatarURL({ dynamic: true }),
+    });
 
-      await webhook.send({
-        username: message.member
-          ? message.member.displayName
-          : message.author.username,
-        avatarURL: message.author.displayAvatarURL({ dynamic: true }),
-        content: emojiURL,
-      });
+    await webhook.send({
+      username: message.member
+        ? message.member.displayName
+        : message.author.username,
+      avatarURL: message.author.displayAvatarURL({ dynamic: true }),
+      content: emojiURL,
+    });
 
-      // 웹훅 삭제 (웹훅 남용 방지)
-      webhook.delete();
-    }
+    // 웹훅 삭제 (웹훅 남용 방지)
+    webhook.delete();
   }
 });
 
