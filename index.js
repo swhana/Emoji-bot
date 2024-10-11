@@ -20,47 +20,47 @@ client.on("messageCreate", async (message) => {
   // 이모지 추출 로직
   const customEmojiRegex = /<a?:\w+:\d+>/g;
   const emojiMatch = message.content.match(customEmojiRegex);
+  if (!emojiMatch) return;
+  const emojiURLs = emojiMatch.map((emoji) => {
+    const emojiId = emoji.split(":")[2].replace(">", "");
+    const extension = emoji.startsWith("<a:") ? ".gif" : ".png";
+    return `https://cdn.discordapp.com/emojis/${emojiId}${extension}`;
+  });
 
-  if (emojiMatch) {
-    const emojiId = emojiMatch[0].split(":")[2].replace(">", "");
-    const userId = message.author.id;
-    const avatarId = message.author.avatar;
+  if (emojiURLs.length > 1) return;
+  const userId = message.author.id;
+  const avatarId = message.author.avatar;
+  const avatarURL = `https://cdn.discordapp.com/avatars/${userId}/${avatarId}.webp`;
 
-    // 움짤의 경우 gif로 관리
-    let extension = ".png";
-    if (message.content.includes("<a:")) extension = ".gif";
+  // 새 메시지용 유저 데이터
+  const username = message.member
+    ? message.member.displayName
+    : message.author.username;
+  const avatar_url = message.member.avatarURL() ?? avatarURL;
 
-    // 이모지 이미지 URL 가져오기
-    const emojiURL = `https://cdn.discordapp.com/emojis/${emojiId}${extension}`;
-    const avatarURL = `https://cdn.discordapp.com/avatars/${userId}/${avatarId}.webp`;
+  // 채널 세션에 저장되어 있는 Webhook 가져오기(이모지를 사용했던 유저별로 저장됨)
+  const webhooks = await message.channel.fetchWebhooks();
 
-    // 원본 메시지 삭제 (봇에게 '메시지 관리' 권한 필요)
-    await message.delete();
+  let hook = webhooks
+    .filter((user) => user.name === message.author.username)
+    .first();
 
-    // 채널 세션에 저장되어 있는 Webhook 가져오기(이모지를 사용했던 유저별로 저장됨)
-    const webhooks = await message.channel.fetchWebhooks();
-
-    let hook = webhooks
-      .filter((user) => user.name === message.author.username)
-      .first();
-
-    // 유저의 webhook이 없을 경우 새로 생성
-    if (hook === undefined) {
-      hook = await message.channel.createWebhook({
-        name: message.author.username,
-        avatar: message.member.avatarURL() ?? avatarURL,
-      });
-    }
-
-    // 새 메시지 전송 기능
-    await hook.send({
-      username: message.member
-        ? message.member.displayName
-        : message.author.username,
-      avatarURL: message.member.avatarURL() ?? avatarURL,
-      content: emojiURL,
+  // 유저의 webhook이 없을 경우 새로 생성
+  if (hook === undefined) {
+    hook = await message.channel.createWebhook({
+      name: message.author.username,
+      avatar: message.member.avatarURL() ?? avatarURL,
     });
   }
+
+  // 원본 메시지 삭제 (봇에게 '메시지 관리' 권한 필요)
+  message.delete();
+
+  hook.send({
+    username: username,
+    avatarURL: avatar_url,
+    content: emojiURLs[0],
+  });
 });
 
 client.login(token);
