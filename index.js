@@ -1,5 +1,3 @@
-//Animated Webp를 Animated Gif로 변환해서 디스코드에 업로드해주는 봇입니다
-
 const { Client, GatewayIntentBits, Partials } = require("discord.js");
 
 const { token } = require("./config.json");
