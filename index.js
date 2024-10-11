@@ -23,30 +23,46 @@ client.on("messageCreate", async (message) => {
 
   if (emojiMatch) {
     const emojiId = emojiMatch[0].split(":")[2].replace(">", "");
-    const emoji = message.guild.emojis.cache.get(emojiId);
+    const userId = message.author.id;
+    const avatarId = message.author.avatar;
+    let extension = ".png";
+    if (message.content.includes("<a:")) extension = ".gif";
 
     // 이모지 이미지 URL 가져오기
-    const emojiURL = `https://cdn.discordapp.com/emojis/${emojiId}.png`;
+    const emojiURL = `https://cdn.discordapp.com/emojis/${emojiId}${extension}`;
+    const avatarURL = `https://cdn.discordapp.com/avatars/${userId}/${avatarId}.webp`;
 
     // 원본 메시지 삭제 (봇에게 '메시지 관리' 권한 필요)
-    message.delete();
+    await message.delete();
 
-    // 웹훅 생성 및 메시지 전송 예제
-    const webhook = await message.channel.createWebhook({
-      name: message.author.username,
-      avatar: message.author.displayAvatarURL({ dynamic: true }),
-    });
+    // 채널 세션에 저장되어 있는 Webhook 가져오기(이모지를 사용했던 유저별로 저장됨)
+    const webhooks = await message.channel.fetchWebhooks();
 
-    await webhook.send({
-      username: message.member
-        ? message.member.displayName
-        : message.author.username,
-      avatarURL: message.author.displayAvatarURL({ dynamic: true }),
-      content: emojiURL,
-    });
+    const hook = webhooks
+      .filter((user) => user.name === message.author.username)
+      .first();
 
-    // 웹훅 삭제 (웹훅 남용 방지)
-    webhook.delete();
+    if (hook === undefined) {
+      const webhook = await message.channel.createWebhook({
+        name: message.author.username,
+        avatar: message.member.avatarURL() ?? avatarURL,
+      });
+      await webhook.send({
+        username: message.member
+          ? message.member.displayName
+          : message.author.username,
+        avatarURL: message.member.avatarURL() ?? avatarURL,
+        content: emojiURL,
+      });
+    } else {
+      await hook.send({
+        username: message.member
+          ? message.member.displayName
+          : message.author.username,
+        avatarURL: message.member.avatarURL() ?? avatarURL,
+        content: emojiURL,
+      });
+    }
   }
 });
 
