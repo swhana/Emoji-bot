@@ -17,7 +17,7 @@ const client = new Client({
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
-  // 이모지 추출 로직 구현
+  // 이모지 추출 로직
   const customEmojiRegex = /<a?:\w+:\d+>/g;
   const emojiMatch = message.content.match(customEmojiRegex);
 
@@ -25,6 +25,8 @@ client.on("messageCreate", async (message) => {
     const emojiId = emojiMatch[0].split(":")[2].replace(">", "");
     const userId = message.author.id;
     const avatarId = message.author.avatar;
+
+    // 움짤의 경우 gif로 관리
     let extension = ".png";
     if (message.content.includes("<a:")) extension = ".gif";
 
@@ -38,31 +40,26 @@ client.on("messageCreate", async (message) => {
     // 채널 세션에 저장되어 있는 Webhook 가져오기(이모지를 사용했던 유저별로 저장됨)
     const webhooks = await message.channel.fetchWebhooks();
 
-    const hook = webhooks
+    let hook = webhooks
       .filter((user) => user.name === message.author.username)
       .first();
 
+    // 유저의 webhook이 없을 경우 새로 생성
     if (hook === undefined) {
-      const webhook = await message.channel.createWebhook({
+      hook = await message.channel.createWebhook({
         name: message.author.username,
         avatar: message.member.avatarURL() ?? avatarURL,
       });
-      await webhook.send({
-        username: message.member
-          ? message.member.displayName
-          : message.author.username,
-        avatarURL: message.member.avatarURL() ?? avatarURL,
-        content: emojiURL,
-      });
-    } else {
-      await hook.send({
-        username: message.member
-          ? message.member.displayName
-          : message.author.username,
-        avatarURL: message.member.avatarURL() ?? avatarURL,
-        content: emojiURL,
-      });
     }
+
+    // 새 메시지 전송 기능
+    await hook.send({
+      username: message.member
+        ? message.member.displayName
+        : message.author.username,
+      avatarURL: message.member.avatarURL() ?? avatarURL,
+      content: emojiURL,
+    });
   }
 });
 
